@@ -1,5 +1,7 @@
 # Installation of dockerized Nextcloud instance behind a Nginx reverse proxy.
 
+**IMPORTANT**: This README file AND the project is a work in progress. It is not finished yet. <br>
+
 ## Table of Contents:
 [TOC]
 
