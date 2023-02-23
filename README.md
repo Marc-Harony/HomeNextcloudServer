@@ -15,6 +15,8 @@
   - [Prerequisites](#prerequisites)
   - [Good to know before starting](#good-to-know-before-starting)
     - [Docker's volumes](#dockers-volumes)
+    - [Other folders in /mnt/nextcloud-configuration](#other-folders-in-mntnextcloud-configuration)
+  - [Step 1: Install dependancies and configure the host](#step-1-install-dependancies-and-configure-the-host)
 
 
 ## Obectives:
@@ -39,7 +41,6 @@ Nginx (pronounced "engine-x") is a web server which can also be used as a revers
 ## About this repository
 
 This repository contains a docker-compose file to run a Nextcloud instance behind a Nginx reverse proxy. It is based on the official Nextcloud docker image and the official Nginx docker image.
-**IMPORTANT**: 
 
 ## About this README file
 
@@ -73,3 +74,84 @@ The data, the OS and the configuration files are stored on different volumes to 
 |**Nextcloud**|`/mnt/nextcloud-data/data:/var/www/html/data:rw`|Nextcloud data files. As said previously, this mount point is in another volume to avoid data loss in case of a server crash.|
 |**Nginx**|`/mnt/nextcloud-configuration/nginx:/etc/nginx:rw`|Nginx configuration files.|
 
+*- `ro` is for read-only so the container cannot directly write the file/directory*<br>
+*- `rw` is for read-write so the container can directly write the file/directory*<br>
+*NB: Note that the `ro` option is not mandatory, it is just a good practice to avoid any misinterpretation.*
+
+### Other folders in /mnt/nextcloud-configuration
+|Folder|Usage|
+|:-----|:----|
+|`/mnt/nextcloud-configuration/docker-compose`|This folder contains the docker-compose.yaml file.|
+
+## Step 1: Install dependancies and configure the host
+1) Update your system
+```bash
+sudo dnf update -y
+```
+2) Install Docker
+```bash
+#########################
+# Configure Docker repo #
+#########################
+sudo dnf install -y dnf-utils
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+#####################
+# Install Docker CE #
+#####################
+sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+#########################
+# Conf users and groups #
+#########################
+sudo usermod -aG docker <your_user>
+sudo newgrp docker <<! >/dev/null 2>&1
+exit
+!
+
+#####################
+# Configure SELinux #
+#####################
+sudo semanage permissive -a container_t
+
+###################
+# Deactivate IPv6 #
+###################
+sudo cp /etc/sysctl.conf /etc/sysctl.conf.origin
+sudo sysctl -w net.ipv4.conf.all.forwarding=1 | tee -a /etc/sysctl.conf
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1 | tee -a /etc/sysctl.conf
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1 | tee -a /etc/sysctl.conf
+sudo sysctl --system #This loads settings into the running configuration without rebooting the server
+# Check if the settings are applied:
+sudo sysctl net.ipv4.conf.all.forwarding
+sudo sysctl net.ipv6.conf.all.disable_ipv6
+sudo sysctl net.ipv6.conf.default.disable_ipv6
+
+#######################
+# Edit Docker logging #
+#######################
+sudo touch /etc/docker/daemon.json
+sudo chmod 644 /etc/docker/daemon.json
+sudo chown root:root /etc/docker/daemon.json
+echo '{' | sudo tee -a /etc/docker/daemon.json
+echo '    "log-driver": "json-file",' | sudo  tee -a /etc/docker/daemon.json
+echo '    "log-opts": {'| sudo tee -a /etc/docker/daemon.json
+echo '        "max-size": "200k",' | sudo tee -a /etc/docker/daemon.json
+echo '        "max-file": "5",' | sudo tee -a /etc/docker/daemon.json
+echo '        "mode": "non-blocking"' | sudo tee -a /etc/docker/daemon.json
+echo '    }' | sudo tee -a /etc/docker/daemon.json
+echo '}' | sudo tee -a /etc/docker/daemon.json
+
+####################
+# Start Docker CE #
+####################
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo systemctl status docker
+```
+A script is available to automate the installation of Docker. You can find it [here](). <br>
+To launch the script, run the following commands:
+```bash
+sudo chmod +x /path/to/script/install_docker.sh
+sudo /path/to/script/install_docker.sh
+```
