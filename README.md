@@ -84,6 +84,14 @@ The data, the OS and the configuration files are stored on different volumes to 
 |`/mnt/nextcloud-configuration/docker-compose`|This folder contains the docker-compose.yaml file.|
 
 ## Step 1: Install dependancies and configure the host
+A script is available to automate the installation of Docker. You can find it [here](https://github.com/Marc-Harony/HomeNextcloudServer/blob/master/scripts/install_docker.sh). <br>
+To launch the script, run the following commands:
+```bash
+sudo chmod +x /path/to/script/install_docker.sh
+sudo /path/to/script/install_docker.sh
+```
+Or you can follow the steps below:
+
 1) Update your system
 ```bash
 sudo dnf update -y
@@ -142,16 +150,17 @@ echo '        "mode": "non-blocking"' | sudo tee -a /etc/docker/daemon.json
 echo '    }' | sudo tee -a /etc/docker/daemon.json
 echo '}' | sudo tee -a /etc/docker/daemon.json
 
+##########################
+# Configure the firewall #
+##########################
+sudo firewall-cmd --permanent --zone=public --add-port=80/tcp --add-port=80/udp
+sudo firewall-cmd --permanent --zone=public --add-port=443/tcp --add-port=443/udp
+sudo firewall-cmd --reload
+
 ####################
 # Start Docker CE #
 ####################
 sudo systemctl enable docker
 sudo systemctl start docker
 sudo systemctl status docker
-```
-A script is available to automate the installation of Docker. You can find it [here](https://github.com/Marc-Harony/HomeNextcloudServer/blob/master/scripts/install_docker.sh). <br>
-To launch the script, run the following commands:
-```bash
-sudo chmod +x /path/to/script/install_docker.sh
-sudo /path/to/script/install_docker.sh
 ```

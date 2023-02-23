@@ -3,7 +3,6 @@ echo "Press any key to continue or CTRL+C to abort"
 read -n 1 -s
 
 
-
 echo "#########################"
 echo "# Configure Docker repo #"
 echo "#########################"
@@ -56,9 +55,20 @@ echo '        "mode": "non-blocking"' |  tee -a /etc/docker/daemon.json
 echo '    }' |  tee -a /etc/docker/daemon.json
 echo '}' |  tee -a /etc/docker/daemon.json
 
+
+echo "##########################"
+echo "# Configure the firewall #"
+echo "##########################"
+firewall-cmd --permanent --zone=public --add-port=80/tcp --add-port=80/udp
+firewall-cmd --permanent --zone=public --add-port=443/tcp --add-port=443/udp
+firewall-cmd --reload
+
 echo "###################"
 echo "# Start Docker CE #"
 echo "###################"
 systemctl enable docker
 systemctl start docker
 systemctl status docker
+
+echo " Installation completed!"
+echo "Have fun!"
