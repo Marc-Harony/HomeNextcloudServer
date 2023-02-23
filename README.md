@@ -149,7 +149,7 @@ sudo systemctl enable docker
 sudo systemctl start docker
 sudo systemctl status docker
 ```
-A script is available to automate the installation of Docker. You can find it [here](). <br>
+A script is available to automate the installation of Docker. You can find it [here](https://github.com/Marc-Harony/HomeNextcloudServer/blob/master/scripts/install_docker.sh). <br>
 To launch the script, run the following commands:
 ```bash
 sudo chmod +x /path/to/script/install_docker.sh
