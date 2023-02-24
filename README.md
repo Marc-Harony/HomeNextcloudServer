@@ -17,6 +17,10 @@
     - [Docker's volumes](#dockers-volumes)
     - [Other folders in /mnt/nextcloud-configuration](#other-folders-in-mntnextcloud-configuration)
   - [Step 1: Install dependancies and configure the host](#step-1-install-dependancies-and-configure-the-host)
+  - [Step 2: Add and/or configure a drive to store the data](#step-2-add-andor-configure-a-drive-to-store-the-data)
+  - [Step 3: docker-compose.yaml](#step-3-docker-composeyaml)
+    - [Explanation of the docker-compose.yaml file](#explanation-of-the-docker-composeyaml-file)
+  - [Step 4: Post-installation](#step-4-post-installation)
 
 
 ## Obectives:
@@ -62,7 +66,7 @@ More information about Docker's volumes are available here: https://docs.docker.
 <br>
 Volumes are configured into the docker-compose.yaml file. <br>
 The volume that contains configuration files is mounted from /mnt/nextcloud-configuration <br>
-The volume that contains the data is mounted from /mnt/nextcloud-data <br>
+The volume that contains the data is mounted from /mnt/nextcloud-configuration/nextcloud/data <br>
 The data, the OS and the configuration files are stored on different volumes to avoid data loss in case of a server crash. <br>
 
 |Docker's services|Volume|Usage|
@@ -70,8 +74,8 @@ The data, the OS and the configuration files are stored on different volumes to 
 |**All Dockers' services**|`/etc/localtime:/etc/localtime:ro`|Needed to synchronize the time between the host and the container.|
 |**All Dockers' services**|`/etc/localtime:/etc/timezone:ro`|Needed to synchronize the time between the host and the container.|
 |**Docker itself**|`/var/run/docker.sock:/var/run/docker.sock:ro`|Needed to allow the docker service to communicate with each other.|
-|**Nextcloud**|`/mnt/nextcloud-configuration/nextcloud:/var/www/html:rw`|Nextcloud configuration files. Themes; database, ... are stored here.|
-|**Nextcloud**|`/mnt/nextcloud-data/data:/var/www/html/data:rw`|Nextcloud data files. As said previously, this mount point is in another volume to avoid data loss in case of a server crash.|
+|**Nextcloud**|`/mnt/nextcloud-configuration/nextcloud/config:/var/www/html:rw`|Nextcloud configuration files. Themes; database, ... are stored here.|
+|**Nextcloud**|`/mnt/nextcloud-configuration/nextcloud/data:/var/www/html/data:rw`|Nextcloud data files. As said previously, this mount point is in another volume to avoid data loss in case of a server crash.|
 |**Nginx**|`/mnt/nextcloud-configuration/nginx:/etc/nginx:rw`|Nginx configuration files.|
 
 *- `ro` is for read-only so the container cannot directly write the file/directory*<br>
@@ -164,3 +168,68 @@ sudo systemctl enable docker
 sudo systemctl start docker
 sudo systemctl status docker
 ```
+## Step 2: Add and/or configure a drive to store the data
+_As an OS can crash, it is a good practice to store the data on a different drive than the OS._ <br>
+_If you can't add a drive and only have one drive, you can skip this step._ <br>
+_If a drive is already configured, you can skip to step 4)._ <br>
+1) Now that the OS and Docker are installed, shutdown the server.
+2) Connect your drive to the server.
+3) Restart the server.
+4) Format the newly connected drive following the steps below:
+__Note that if there is already data you want to keep on the drive, you may want to skip the formatting step.__
+```bash
+####################
+# Format the drive #
+####################
+#/!\ WARNING: This will erase all the data on the drive /!\
+#If you want to keep the data, go to the next step!
+#List the drives
+sudo lsblk
+#Create a GPT partition table
+echo -e "mklabel GPT\nYes\nmkpart primary 4096s 100%\nq" | sudo parted /dev/sdb
+#List the drives to get the partition name
+sudo lsblk #In the current context, the partition name is sdb1
+#Format the new partition
+sudo mkfs.xfs -f -b size=4096 -m reflink=1,crc=1 /dev/sdb1
+
+####################
+# Mount the drive  #
+####################
+#Create the mount point and subfolders
+sudo mkdir -p /mnt/nextcloud-configuration/nextcloud/config  #This will be the mount point for the configuration files
+sudo mkdir -p /mnt/nextcloud-configuration/nextcloud/data    #This will be the mount point for the data files
+sudo mkdir -p /mnt/nextcloud-configuration/nginx             #This will be the mount point for the nginx configuration files
+sudo mkdir -p /mnt/nextcloud-configuration/docker-compose    #This will be the mount point for the docker-compose.yaml file
+#Mount the drive
+sudo mount -t auto /dev/sdb1 /mnt/nextcloud-configuration
+#Make it permanent
+sudo cp /etc/fstab /etc/fstab.origin
+diskuuid=$(sudo lsblk -o NAME,UUID | grep sdb1 | awk '{print $2}')
+echo "UUID=$diskuuid /mnt/nextcloud-configuration xfs nosuid,nodev,nofail,x-gvfs-show 0 0" | sudo tee -a /etc/fstab
+sudo chmod -R 777 /mnt/nextcloud-configuration #Grants all permissions to the new partition
+```
+NB: The -p option allow to create the parent directories if they are missing. i.e: <br>
+- You want to create a `test` directory in `/foo/bar` but the `bar` directory does not exist.
+- By using `mkdir -i /foo/bar/test` the `/bar` directory will be created in `/foo` and then the `/test` directory will be created in `/foo/bar`
+
+## Step 3: docker-compose.yaml
+__For all the parts concerning the docker-compose.yaml file, I will use:__ <br>
+- __`/mnt/nextcloud-configuration/docker-compose`__ as the folder where the docker-compose.yaml file is located. <br>
+- __`/mnt/nextcloud-configuration/nextcloud/config`__ as the folder where the configuration files are located. <br>
+- __`/mnt/nextcloud-configuration/nextcloud/data`__ as the folder where the data files are located. <br>
+- __`/mnt/nextcloud-configuration/nginx`__ as the folder where the nginx configuration files are located. <br>
+
+Now, it is time to create the docker-compose.yaml file. <br>
+<br>
+Download the file provided in this repository and place it in the folder you created in step 2. <br>
+```bash	
+wget https://raw.githubusercontent.com/NextCloud-Configuration/NextCloud-Configuration/main/docker-compose.yaml -O /mnt/nextcloud-configuration/docker-compose/docker-compose.yaml
+```
+
+### Explanation of the docker-compose.yaml file
+If you only want a working Nextcloud and don't care about the details, you can skip to [Step 4](#step-4-post-installation). <br>
+```yaml
+
+```
+
+## Step 4: Post-installation
