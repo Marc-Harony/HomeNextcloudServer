@@ -231,5 +231,9 @@ If you only want a working Nextcloud and don't care about the details, you can s
 ```yaml
 
 ```
+Now that the docker-compose.yaml file is created, you can start the containers. <br>
+```bash
+sudo docker compose -f /mnt/nextcloud-configuration/docker-compose/docker-compose.yaml up -d
+```
 
 ## Step 4: Post-installation
