@@ -1,0 +1,61 @@
+#THIS IS A WORK IN PROGRESS DO NOT USE AS IS YET !!
+#THIS IS A WORK IN PROGRESS DO NOT USE AS IS YET !!
+#THIS IS A WORK IN PROGRESS DO NOT USE AS IS YET !!
+#THIS IS A WORK IN PROGRESS DO NOT USE AS IS YET !!
+#THIS IS A WORK IN PROGRESS DO NOT USE AS IS YET !!
+#THIS IS A WORK IN PROGRESS DO NOT USE AS IS YET !!
+#THIS IS A WORK IN PROGRESS DO NOT USE AS IS YET !!
+#THIS IS A WORK IN PROGRESS DO NOT USE AS IS YET !!
+#THIS IS A WORK IN PROGRESS DO NOT USE AS IS YET !!
+
+version: '3.9'
+services:
+  proxy:
+    image: jwilder/nginx-proxy:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    networks:
+      - nextcloud_network
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/localtime:/etc/timezone:ro
+      - /mnt/nextcloud-configuration/nginx/conf.d:/etc/nginx/conf.d:rw
+      - /mnt/nextcloud-configuration/nginx/vhost.d:/etc/nginx/vhost.d:rw
+      - /mnt/nextcloud-configuration/nginx/html:/usr/share/nginx/html:rw
+      - /mnt/nextcloud-configuration/nginx/certs:/etc/nginx/certs:ro
+
+nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    networks:
+      - nextcloud_network
+    depends_on:
+      - proxy
+    volumes:
+      # Needed to have the same localtime and timezone between the host and the Docker.
+      # So, the Docker logs are generated with the right timestamp.
+      - /mnt/nextcloud-configuration/nextcloud/config:/var/www/html:rw
+      - /mnt/nextcloud-configuration/nextcloud/data:/var/www/html/data:rw    
+    ports:
+      - 80:80
+      - 443:443
+
+# certbot service
+certbot:
+  image: certbot/certbot
+  volumes:
+    - ./certbot/conf:/etc/letsencrypt
+    - ./certbot/www:/var/www/certbot
+  environment:
+    - LETSENCRYPT_HOST=domain.example.com #This is the domain name that you want to use for your Nextcloud instance
+    - LETSENCRYPT_EMAIL=example@domain.com #This
+  depends_on:
+    - proxy
+  command: certonly --webroot --webroot-path=/var/www/certbot --agree-tos -d domain.example.com
+
+networks:
+  nextcloud_network:
+    driver: bridge
