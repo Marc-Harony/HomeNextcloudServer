@@ -19,7 +19,9 @@
   - [Step 1: Install dependancies and configure the host](#step-1-install-dependancies-and-configure-the-host)
   - [Step 2: Add and/or configure a drive to store the data](#step-2-add-andor-configure-a-drive-to-store-the-data)
   - [Step 3: docker-compose.yaml](#step-3-docker-composeyaml)
-    - [Explanation of the docker-compose.yaml file](#explanation-of-the-docker-composeyaml-file)
+    - [Nextcloud container](#nextcloud-container)
+    - [Proxy container (nginx)](#proxy-container-nginx)
+    - [SSL Certs automation (Certbot)](#ssl-certs-automation-certbot)
   - [Step 4: Post-installation](#step-4-post-installation)
 
 
@@ -223,14 +225,55 @@ Now, it is time to create the docker-compose.yaml file. <br>
 <br>
 Download the file provided in this repository and place it in the folder you created in step 2. <br>
 ```bash	
-wget https://raw.githubusercontent.com/NextCloud-Configuration/NextCloud-Configuration/main/docker-compose.yaml -O /mnt/nextcloud-configuration/docker-compose/docker-compose.yaml
+wget https://raw.githubusercontent.com/Marc-Harony/HomeNextcloudServer/master/docker_compose/docker-compose.yaml -O /mnt/nextcloud-configuration/docker-compose/docker-compose.yaml
 ```
-
-### Explanation of the docker-compose.yaml file
 If you only want a working Nextcloud and don't care about the details, you can skip to [Step 4](#step-4-post-installation). <br>
-```yaml
 
+### Nextcloud container
+
+```yaml
+version: '3.9'
 ```
+We use the current latest version of Docker compose files (3.9)
+
+```yaml
+services:
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+```
+We declare a new service called `nextcloud` based on the `latest` version of the `official nextcloud image` and for easier troubleshot, we will name the container `nextcloud`. <br>
+_By default, Docker gives a random name to the containers._
+```yaml    
+    networks:
+      - nextcloud_network
+```
+Our container will run on the `nextcloud-docker` network that we will define later.
+```yaml
+    depends_on:
+      - proxy
+```
+We want our nextcloud container to be linked with the `proxy` container that we will define later in the `docker-compose.yaml` file.
+```yaml
+    volumes:
+      # Needed to have the same localtime and timezone between the host and the Docker.
+      # So, the Docker logs are generated with the right timestamp.
+      - /mnt/nextcloud-configuration/nextcloud/config:/var/www/html:rw
+      - /mnt/nextcloud-configuration/nextcloud/data:/var/www/html/data:rw    
+```
+We mount the required volumes on the container. This will allow us to modify the container without havin to log into the container and this will allow us to easily backup and edit configuration if needed.
+```yaml
+    ports:        ##Only for tests
+      - 80:80     ##Only for tests
+      - 443:443   ##Only for tests*
+```
+This part is only here for test purposes and bust be commented or deleted.
+### Proxy container (nginx)
+
+
+### SSL Certs automation (Certbot)
+
+
 Now that the docker-compose.yaml file is created, you can start the containers. <br>
 ```bash
 sudo docker compose -f /mnt/nextcloud-configuration/docker-compose/docker-compose.yaml up -d
