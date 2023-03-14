@@ -10,6 +10,22 @@
 
 version: '3.9'
 services:
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    networks:
+      - nextcloud_network
+    depends_on:
+      - proxy
+    volumes:
+      # Needed to have the same localtime and timezone between the host and the Docker.
+      # So, the Docker logs are generated with the right timestamp.
+      - /mnt/nextcloud-configuration/nextcloud/config:/var/www/html:rw
+      - /mnt/nextcloud-configuration/nextcloud/data:/var/www/html/data:rw    
+    ports:        ##Only for tests
+      - 80:80     ##Only for tests
+      - 443:443   ##Only for tests
+
   proxy:
     image: jwilder/nginx-proxy:alpine
     container_name: nginx-proxy
@@ -27,22 +43,6 @@ services:
       - /mnt/nextcloud-configuration/nginx/html:/usr/share/nginx/html:rw
       - /mnt/nextcloud-configuration/nginx/certs:/etc/nginx/certs:ro
 
-nextcloud:
-    image: nextcloud:latest
-    container_name: nextcloud
-    networks:
-      - nextcloud_network
-    depends_on:
-      - proxy
-    volumes:
-      # Needed to have the same localtime and timezone between the host and the Docker.
-      # So, the Docker logs are generated with the right timestamp.
-      - /mnt/nextcloud-configuration/nextcloud/config:/var/www/html:rw
-      - /mnt/nextcloud-configuration/nextcloud/data:/var/www/html/data:rw    
-    ports:
-      - 80:80
-      - 443:443
-
 # certbot service
 certbot:
   image: certbot/certbot
@@ -51,7 +51,7 @@ certbot:
     - ./certbot/www:/var/www/certbot
   environment:
     - LETSENCRYPT_HOST=domain.example.com #This is the domain name that you want to use for your Nextcloud instance
-    - LETSENCRYPT_EMAIL=example@domain.com #This
+    - LETSENCRYPT_EMAIL=example@domain.com #This is your email address you used to register your domain name
   depends_on:
     - proxy
   command: certonly --webroot --webroot-path=/var/www/certbot --agree-tos -d domain.example.com
