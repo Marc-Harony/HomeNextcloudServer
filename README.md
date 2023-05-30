@@ -22,6 +22,7 @@
     - [Nextcloud container](#nextcloud-container)
     - [Proxy container (nginx)](#proxy-container-nginx)
     - [SSL Certs automation (Certbot)](#ssl-certs-automation-certbot)
+    - [Run the containers](#run-the-containers)
   - [Step 4: Post-installation](#step-4-post-installation)
 
 
@@ -241,6 +242,7 @@ services:
   nextcloud:
     image: nextcloud:latest
     container_name: nextcloud
+    hostname: nextcloud
 ```
 We declare a new service called `nextcloud` based on the `latest` version of the `official nextcloud image` and for easier troubleshot, we will name the container `nextcloud`. <br>
 _By default, Docker gives a random name to the containers._
@@ -269,10 +271,42 @@ We mount the required volumes on the container. This will allow us to modify the
 ```
 This part is only here for test purposes and bust be commented or deleted.
 ### Proxy container (nginx)
+```yaml
+  nginx:
+    image: nginx:stable-alpine
+    container_name: proxy
+    hostname: proxy
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/localtime:/etc/timezone:ro
+      - /mnt/nextcloud-configuration/nginx/conf.d:/etc/nginx/conf.d:ro
+      - /mnt/nextcloud-configuration/nginx/certificates:/etc/nginx/certificates:ro
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - nextcloud_network
+```
+This will create a new service called `nginx` based on the `stable-alpine` version of the `official nginx image` and for easier troubleshot, we will name the container `proxy`. <br>
+There is one more step to do : configure the network. <br>
+**IMPORTANT : Remember to comment the ports section in the nextcloud container.** <br>
 
-
+```yaml
+networks:
+  docker_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/24
+          gateway: 172.28.0.1
+```
+*You can set the subnet you want. Just make sure your subnet does not overlap with any other subnet you are using.* <br>
 ### SSL Certs automation (Certbot)
-
+To configure the SSL certificates with CertBOT, just follow the [official documentation:](https://certbot.eff.org/instructions) <br>
+Note that you may configure a different location for your certificates.
+### Run the containers
 
 Now that the docker-compose.yaml file is created, you can start the containers. <br>
 ```bash
@@ -280,3 +314,6 @@ sudo docker compose -f /mnt/nextcloud-configuration/docker-compose/docker-compos
 ```
 
 ## Step 4: Post-installation
+To connect to your nextcloud server, you can browse to https://<your_server_ip> or https://subdomain.domain.com if you have configured a DNS record. <br>
+You will be asked to configure an admin account and a password. <br>
+After that, you will be able to use your Nextcloud instance, congrats and enjoy ! <br>

@@ -26,36 +26,27 @@ services:
       - 80:80     ##Only for tests
       - 443:443   ##Only for tests
 
-  proxy:
-    image: jwilder/nginx-proxy:alpine
-    container_name: nginx-proxy
-    restart: unless-stopped
-    networks:
-      - nextcloud_network
-    ports:
-      - 80:80
-      - 443:443
+  nginx:
+    image: nginx:stable-alpine
+    container_name: proxy
+    hostname: proxy
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/localtime:/etc/timezone:ro
-      - /mnt/nextcloud-configuration/nginx/conf.d:/etc/nginx/conf.d:rw
-      - /mnt/nextcloud-configuration/nginx/vhost.d:/etc/nginx/vhost.d:rw
-      - /mnt/nextcloud-configuration/nginx/html:/usr/share/nginx/html:rw
-      - /mnt/nextcloud-configuration/nginx/certs:/etc/nginx/certs:ro
-
-# certbot service
-certbot:
-  image: certbot/certbot
-  volumes:
-    - ./certbot/conf:/etc/letsencrypt
-    - ./certbot/www:/var/www/certbot
-  environment:
-    - LETSENCRYPT_HOST=domain.example.com #This is the domain name that you want to use for your Nextcloud instance
-    - LETSENCRYPT_EMAIL=example@domain.com #This is your email address you used to register your domain name
-  depends_on:
-    - proxy
-  command: certonly --webroot --webroot-path=/var/www/certbot --agree-tos -d domain.example.com
+      - /mnt/nextcloud-configuration/nginx/conf.d:/etc/nginx/conf.d:ro
+      - /mnt/nextcloud-configuration/nginx/certificates:/etc/nginx/certificates:ro
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - nextcloud_network
 
 networks:
-  nextcloud_network:
+  docker_net:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/24
+          gateway: 172.28.0.1
