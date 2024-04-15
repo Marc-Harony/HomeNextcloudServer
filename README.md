@@ -16,7 +16,7 @@
   - [Good to know before starting](#good-to-know-before-starting)
     - [Docker's volumes](#dockers-volumes)
     - [Other folders in /mnt/nextcloud-configuration](#other-folders-in-mntnextcloud-configuration)
-  - [Step 1: Install dependancies and configure the host](#step-1-install-dependancies-and-configure-the-host)
+  - [Step 1: Install dependencies and configure the host](#step-1-install-dependencies-and-configure-the-host)
   - [Step 2: Add and/or configure a drive to store the data](#step-2-add-andor-configure-a-drive-to-store-the-data)
   - [Step 3: docker-compose.yaml](#step-3-docker-composeyaml)
     - [Nextcloud container](#nextcloud-container)
@@ -90,7 +90,7 @@ The data, the OS and the configuration files are stored on different volumes to 
 |:-----|:----|
 |`/mnt/nextcloud-configuration/docker-compose`|This folder contains the docker-compose.yaml file.|
 
-## Step 1: Install dependancies and configure the host
+## Step 1: Install dependencies and configure the host
 A script is available to automate the installation of Docker. You can find it [here](https://github.com/Marc-Harony/HomeNextcloudServer/blob/master/scripts/install_docker.sh). <br>
 To launch the script, run the following commands:
 ```bash
